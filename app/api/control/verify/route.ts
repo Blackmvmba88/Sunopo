@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error) {
+    console.error("Control verification error:", error);
     return NextResponse.json(
       { success: false, message: "Invalid request" },
       { status: 400 }
