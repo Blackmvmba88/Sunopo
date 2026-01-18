@@ -1,23 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+
+// Helper function to check initial auth state
+const getInitialAuthState = () => {
+  if (typeof window !== 'undefined') {
+    return sessionStorage.getItem('control_auth') === 'true';
+  }
+  return false;
+};
 
 export default function ControlPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(getInitialAuthState);
   const [secretInput, setSecretInput] = useState('');
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    // Check if already authenticated in session
-    const auth = sessionStorage.getItem('control_auth');
-    if (auth === 'true') {
-      // Use a microtask to avoid setState during render
-      Promise.resolve().then(() => setIsAuthenticated(true));
-    }
-  }, []);
-
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    // NOTE: In production, use server-side authentication
+    // This is a simple client-side demo for illustration purposes only
     const secret = process.env.NEXT_PUBLIC_CONTROL_SECRET || 'blackmamba2024';
     
     if (secretInput === secret) {

@@ -98,6 +98,8 @@ Protected admin panel requiring a secret to access:
 **Language**: English
 **Default Secret**: `blackmamba2024` (change in `.env.local`)
 
+> **⚠️ Security Note**: The current implementation uses client-side authentication for simplicity. In a production environment, implement proper server-side authentication with secure session management.
+
 ## API Routes
 
 ### POST `/api/generate`
