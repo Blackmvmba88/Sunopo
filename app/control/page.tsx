@@ -6,16 +6,13 @@ export default function ControlPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [secretInput, setSecretInput] = useState('');
   const [error, setError] = useState('');
-  const [stats, setStats] = useState({
-    totalGenerations: 0,
-    lastGenerated: null as string | null,
-  });
 
   useEffect(() => {
     // Check if already authenticated in session
     const auth = sessionStorage.getItem('control_auth');
     if (auth === 'true') {
-      setIsAuthenticated(true);
+      // Use a microtask to avoid setState during render
+      Promise.resolve().then(() => setIsAuthenticated(true));
     }
   }, []);
 
@@ -110,13 +107,13 @@ export default function ControlPage() {
 
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
             <h3 className="text-gray-400 text-sm font-medium mb-2">Total Generations</h3>
-            <p className="text-2xl font-bold">{stats.totalGenerations}</p>
+            <p className="text-2xl font-bold">0</p>
           </div>
 
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
             <h3 className="text-gray-400 text-sm font-medium mb-2">Last Generated</h3>
             <p className="text-lg font-medium">
-              {stats.lastGenerated || 'Never'}
+              Never
             </p>
           </div>
         </div>
