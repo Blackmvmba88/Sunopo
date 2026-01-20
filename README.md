@@ -1,41 +1,64 @@
 # BlackMamba
 
-A minimal Next.js audio generation app with a Suno-inspired layout and black theme.
+BlackMamba is a Suno-like audio generation interface with a minimal black theme.
 
 ## Features
 
-- **Display Page (`/display`)** - Public page in Spanish with:
-  - Generate button for audio creation
-  - Real-time progress indicator
-  - Audio player with controls
-  - Download and Share functionality
-  - Black minimal theme
+- **Display Page** (`/display`): Public Spanish interface with audio generation, progress tracking, playback, download, and share functionality
+- **Control Panel** (`/control`): Private English administrative interface protected by CONTROL_SECRET
+- **Mock API**: Simulated audio generation with random delays (1.5-3 seconds)
+- **Black Minimal Theme**: Built with TailwindCSS for a sleek, modern look
 
-- **Control Panel (`/control`)** - Private page in English with:
-  - Secret-based authentication
-  - System status dashboard
-  - Configuration overview
-  - Activity monitoring
-
-- **API Endpoint (`/api/generate`)** - Mock audio generation API that:
-  - Simulates audio generation with random delay (2-5 seconds)
-  - Returns a sample audio file
-  - Provides success/error responses
-
-## Tech Stack
-
-- **Next.js 16** - React framework with App Router
-- **TypeScript** - Type-safe development
-- **Tailwind CSS 4** - Utility-first styling
-- **React 19** - Latest React features
-
-## Getting Started
-
-### Prerequisites
+## Prerequisites
 
 - Node.js 18+ 
 - npm or yarn
 
+## Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd Sunopo
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment variables**
+   ```bash
+   cp .env.example .env.local
+   ```
+   
+   Edit `.env.local` and set your control secret:
+   ```
+   CONTROL_SECRET=your_secret_here
+   ```
+
+4. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open your browser**
+   - Display page: http://localhost:3000/display
+   - Control panel: http://localhost:3000/control
+
+## Usage
+
+### Display Page
+- Click "Generar Audio" to simulate audio generation
+- Watch the progress bar
+- Once complete, play, download, or share the generated audio
+
+### Control Panel
+- Access with the CONTROL_SECRET from your environment
+- View system status and statistics
+- Navigate to the display page
+
+## Build for Production
 ### Installation
 
 1. Clone the repository:
