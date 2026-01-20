@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "BlackMamba",
-  description: "Generador de audio",
+  description: "Audio generation app with Suno-inspired layout",
 };
 
 export default function RootLayout({
@@ -12,8 +12,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
-      <body>{children}</body>
+    <html lang="en">
+      <body className="antialiased">
+        {children}
+      </body>
     </html>
   );
 }

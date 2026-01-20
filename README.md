@@ -59,30 +59,102 @@ BlackMamba is a Suno-like audio generation interface with a minimal black theme.
 - Navigate to the display page
 
 ## Build for Production
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/Blackmvmba88/Sunopo.git
+cd Sunopo
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Create environment file:
+```bash
+cp .env.example .env.local
+```
+
+4. Update the `.env.local` file with your secret:
+```env
+NEXT_PUBLIC_CONTROL_SECRET=your-secret-here
+```
+
+### Development
+
+Run the development server:
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Build for Production
 
 ```bash
 npm run build
 npm start
 ```
 
-## Deploy
+## Pages
 
-### Vercel (Recommended)
+### Display Page - `/display`
+The public-facing page where users can:
+- Click "Generar Audio" to create audio
+- Watch progress bar during generation
+- Play the generated audio
+- Download the audio file
+- Share the audio (uses Web Share API or clipboard fallback)
 
-1. Push your code to GitHub
-2. Import project in [Vercel](https://vercel.com)
-3. Add environment variable: `CONTROL_SECRET`
-4. Deploy
+**Language**: Spanish
 
-### Other Platforms
+### Control Panel - `/control`
+Protected admin panel requiring a secret to access:
+- View system status
+- Monitor generation statistics
+- Manage configuration
+- View recent activity
 
-The app is a standard Next.js application and can be deployed to:
-- Netlify
-- Railway
-- Render
-- Any Node.js hosting platform
+**Language**: English
+**Default Secret**: `blackmamba2024` (change in `.env.local`)
 
-Make sure to set the `CONTROL_SECRET` environment variable on your hosting platform.
+> **⚠️ Security Note**: The current implementation uses client-side authentication for simplicity. In a production environment, implement proper server-side authentication with secure session management.
+
+## API Routes
+
+### POST `/api/generate`
+Generates a mock audio file with random delay.
+
+**Response**:
+```json
+{
+  "success": true,
+  "audioUrl": "/sample-audio.mp3",
+  "message": "Audio generated successfully",
+  "timestamp": "2024-01-18T20:00:00.000Z"
+}
+```
+
+## Customization
+
+### Theme
+The app uses a black minimal theme. To customize:
+- Edit `app/globals.css` for global styles
+- Modify Tailwind classes in component files
+
+### Audio Generation
+The `/api/generate` endpoint currently returns a sample file. To integrate real audio generation:
+1. Update `app/api/generate/route.ts`
+2. Add your audio generation logic
+3. Return the generated audio URL
+
+### Secret Protection
+To change the control panel secret:
+1. Update `NEXT_PUBLIC_CONTROL_SECRET` in `.env.local`
+2. Restart the development server
 
 ## Project Structure
 
@@ -90,42 +162,33 @@ Make sure to set the `CONTROL_SECRET` environment variable on your hosting platf
 Sunopo/
 ├── app/
 │   ├── api/
-│   │   ├── control/verify/route.ts  # Control auth endpoint
-│   │   └── generate/route.ts        # Mock generation endpoint
+│   │   └── generate/
+│   │       └── route.ts          # Audio generation API
 │   ├── control/
-│   │   └── page.tsx                 # Control panel (private)
+│   │   └── page.tsx              # Control panel (private, English)
 │   ├── display/
-│   │   └── page.tsx                 # Display page (public)
-│   ├── globals.css                  # Global styles
-│   ├── layout.tsx                   # Root layout
-│   └── page.tsx                     # Root redirect
+│   │   └── page.tsx              # Display page (public, Spanish)
+│   ├── globals.css               # Global styles (black theme)
+│   └── layout.tsx                # Root layout
 ├── public/
-│   └── samples/
-│       └── sample.mp3               # Sample audio file
-├── .env.example                     # Environment template
-├── .gitignore
-├── next.config.ts
-├── package.json
-├── postcss.config.mjs
-├── tailwind.config.ts
-└── tsconfig.json
+│   └── sample-audio.mp3          # Sample audio file
+├── .env.example                  # Environment variables template
+├── .env.local                    # Local environment variables (not committed)
+├── package.json                  # Dependencies
+└── README.md                     # This file
 ```
 
-## Technologies
+## Environment Variables
 
-- **Next.js 16**: React framework with App Router
-- **TypeScript**: Type-safe development
-- **TailwindCSS 4**: Utility-first CSS framework
-- **React 19**: UI library
-
-## Notes
-
-- This is a scaffold version - real Suno backend integration is not yet implemented
-- The mock API returns a sample MP3 file from `public/samples/`
-- Audio generation simulation includes realistic progress tracking
-- Control panel uses session storage for authentication (development only)
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_CONTROL_SECRET` | Secret to access control panel | `blackmamba2024` |
+| `NEXT_PUBLIC_APP_NAME` | Application name | `BlackMamba` |
 
 ## License
 
-ISC
+MIT License - feel free to use this project for any purpose.
 
+## Credits
+
+UI inspired by [Suno](https://suno.ai/) with a minimal black theme aesthetic.

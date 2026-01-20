@@ -1,13 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
 export async function POST() {
-  // Random delay between 1.5 and 3 seconds
-  const delay = Math.random() * 1.5 + 1.5;
-  await new Promise((resolve) => setTimeout(resolve, delay * 1000));
+  // Random delay between 2-5 seconds to simulate audio generation
+  const delay = Math.floor(Math.random() * 3000) + 2000;
+  
+  await new Promise(resolve => setTimeout(resolve, delay));
 
-  // Return the sample audio file
+  // Return a sample audio file URL
+  // In a real application, this would generate and return actual audio
+  const audioUrl = '/sample-audio.mp3';
+
   return NextResponse.json({
-    audioUrl: "/samples/sample.mp3",
     success: true,
+    audioUrl,
+    message: 'Audio generated successfully',
+    timestamp: new Date().toISOString(),
   });
 }

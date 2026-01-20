@@ -1,90 +1,81 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from 'react';
+
+// Helper function to check initial auth state
+const getInitialAuthState = () => {
+  if (typeof window !== 'undefined') {
+    return sessionStorage.getItem('control_auth') === 'true';
+  }
+  return false;
+};
 
 export default function ControlPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [secret, setSecret] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(getInitialAuthState);
+  const [secretInput, setSecretInput] = useState('');
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    // Check if already authenticated via session storage
-    const authToken = sessionStorage.getItem("control_auth");
-    if (authToken === "authenticated") {
-      setIsAuthenticated(true);
-    }
-    setIsLoading(false);
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    // NOTE: In production, use server-side authentication
+    // This is a simple client-side demo for illustration purposes only
+    const secret = process.env.NEXT_PUBLIC_CONTROL_SECRET || 'blackmamba2024';
     
-    // In a real app, this would verify against the server
-    // For now, we'll do a simple check
-    const response = await fetch("/api/control/verify", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ secret }),
-    });
-
-    if (response.ok) {
-      sessionStorage.setItem("control_auth", "authenticated");
+    if (secretInput === secret) {
       setIsAuthenticated(true);
+      sessionStorage.setItem('control_auth', 'true');
+      setError('');
     } else {
-      alert("Invalid secret");
-      setSecret("");
+      setError('Invalid secret. Please try again.');
+      setSecretInput('');
     }
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem("control_auth");
     setIsAuthenticated(false);
-    setSecret("");
+    sessionStorage.removeItem('control_auth');
+    setSecretInput('');
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-gray-400">Loading...</div>
-      </div>
-    );
-  }
 
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <div className="bg-zinc-900 rounded-lg p-8 space-y-6">
-            <div className="text-center">
-              <h1 className="text-2xl font-bold mb-2">Control Panel</h1>
-              <p className="text-gray-400 text-sm">
-                Enter the control secret to access
-              </p>
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-8 space-y-6">
+            <div className="text-center space-y-2">
+              <h1 className="text-3xl font-bold">Control Panel</h1>
+              <p className="text-gray-400">Enter secret to access</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <input
                   type="password"
-                  value={secret}
-                  onChange={(e) => setSecret(e.target.value)}
-                  placeholder="Control Secret"
-                  className="w-full bg-zinc-800 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-white"
-                  required
+                  value={secretInput}
+                  onChange={(e) => setSecretInput(e.target.value)}
+                  placeholder="Enter secret..."
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white"
+                  autoFocus
                 />
               </div>
 
+              {error && (
+                <div className="bg-red-900/20 border border-red-800 rounded-lg p-3 text-red-400 text-sm">
+                  {error}
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="w-full bg-white text-black font-semibold py-3 px-6 rounded-lg hover:bg-gray-200 transition-colors"
+                className="w-full bg-white text-black font-semibold py-3 px-6 rounded-full hover:bg-gray-200 transition-all duration-200"
               >
-                Access
+                Access Control Panel
               </button>
             </form>
+
+            <div className="text-center text-sm text-gray-500">
+              <p>Hint: Check .env file for the secret</p>
+            </div>
           </div>
         </div>
       </div>
@@ -93,70 +84,82 @@ export default function ControlPage() {
 
   return (
     <div className="min-h-screen bg-black text-white p-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Control Panel</h1>
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold">Control Panel</h1>
+            <p className="text-gray-400">BlackMamba Administration</p>
+          </div>
           <button
             onClick={handleLogout}
-            className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg transition-colors"
+            className="bg-zinc-800 hover:bg-zinc-700 text-white font-medium py-2 px-6 rounded-full transition-all duration-200 border border-zinc-700"
           >
             Logout
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-zinc-900 rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">System Status</h2>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Status:</span>
-                <span className="text-green-400">Active</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">API:</span>
-                <span className="text-green-400">Online</span>
-              </div>
-            </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+            <h3 className="text-gray-400 text-sm font-medium mb-2">System Status</h3>
+            <p className="text-2xl font-bold text-green-400">Active</p>
           </div>
 
-          <div className="bg-zinc-900 rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Statistics</h2>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Total Generations:</span>
-                <span>0</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Success Rate:</span>
-                <span>100%</span>
-              </div>
-            </div>
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+            <h3 className="text-gray-400 text-sm font-medium mb-2">Total Generations</h3>
+            <p className="text-2xl font-bold">0</p>
           </div>
 
-          <div className="bg-zinc-900 rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-            <div className="space-y-2">
-              <button
-                onClick={() => router.push("/display")}
-                className="w-full bg-zinc-800 hover:bg-zinc-700 text-white py-2 px-4 rounded-lg transition-colors text-sm"
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+            <h3 className="text-gray-400 text-sm font-medium mb-2">Last Generated</h3>
+            <p className="text-lg font-medium">
+              Never
+            </p>
+          </div>
+        </div>
+
+        {/* Configuration */}
+        <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6 space-y-4">
+          <h2 className="text-xl font-bold">Configuration</h2>
+          
+          <div className="space-y-3">
+            <div className="flex justify-between items-center py-3 border-b border-zinc-800">
+              <div>
+                <p className="font-medium">Audio Generation</p>
+                <p className="text-sm text-gray-400">Mock audio generation endpoint</p>
+              </div>
+              <span className="text-green-400 text-sm font-medium">Enabled</span>
+            </div>
+
+            <div className="flex justify-between items-center py-3 border-b border-zinc-800">
+              <div>
+                <p className="font-medium">Display Page</p>
+                <p className="text-sm text-gray-400">Public display interface</p>
+              </div>
+              <a
+                href="/display"
+                className="text-blue-400 hover:text-blue-300 text-sm font-medium"
               >
-                View Display Page
-              </button>
+                Visit →
+              </a>
+            </div>
+
+            <div className="flex justify-between items-center py-3">
+              <div>
+                <p className="font-medium">API Endpoint</p>
+                <p className="text-sm text-gray-400">/api/generate</p>
+              </div>
+              <span className="text-green-400 text-sm font-medium">Active</span>
             </div>
           </div>
         </div>
 
-        <div className="mt-8 bg-zinc-900 rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Information</h2>
-          <div className="text-sm text-gray-400 space-y-2">
-            <p>
-              This is the control panel for BlackMamba. From here you can
-              monitor the system status and access administrative features.
-            </p>
-            <p className="mt-4">
-              <strong className="text-white">Note:</strong> Real Suno backend
-              integration is not yet implemented. This is a scaffold version.
-            </p>
+        {/* Recent Activity */}
+        <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-6">
+          <h2 className="text-xl font-bold mb-4">Recent Activity</h2>
+          <div className="text-gray-400 text-sm">
+            <p>No recent activity to display</p>
           </div>
         </div>
       </div>
