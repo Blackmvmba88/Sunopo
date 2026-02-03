@@ -17,6 +17,8 @@ class SessionStore:
             self.fernet = Fernet(fernet_key.encode() if isinstance(fernet_key, str) else fernet_key)
         else:
             self.fernet = None
+            # Warn at runtime if encryption is not configured
+            print("Warning: SESSION_FERNET_KEY not set. Session values will be stored in Redis unencrypted.")
 
     def _encrypt(self, data: str) -> str:
         if not self.fernet:
