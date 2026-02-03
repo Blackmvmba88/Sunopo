@@ -1,0 +1,9 @@
+.venv
+/exports/
+/reports/
+# Local Suno session (sensitive)
+/Users/*/suno_downloader/suno_session.txt
+*.pyc
+__pycache__/
+.env
+.pytest_cache/
