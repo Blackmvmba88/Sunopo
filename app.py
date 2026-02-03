@@ -18,7 +18,30 @@ from config import EXPORTS_DIR, SESSION_ID_PATH, ensure_dirs, read_session_id
 ensure_dirs()
 
 
+from sessions import SessionStore
+
+# Initialize session store (if REDIS_URL set)
+session_store = None
+try:
+    session_store = SessionStore(redis_url=REDIS_URL, ttl=SESSION_TTL_SECONDS, fernet_key=SESSION_FERNET_KEY)
+except Exception as e:
+    print(f"Warning: Session store not configured: {e}")
+
+
 def get_session_id():
+    # Prefer active HTTP cookie token -> resolve in Redis. Fallback to session file.
+    try:
+        from flask import request
+
+        token = request.cookies.get('SUNOPO_SESSION_TOKEN')
+        if token and session_store:
+            cookie = session_store.get_session(token)
+            if cookie:
+                return cookie
+    except Exception:
+        # No request context or redis not available
+        pass
+
     try:
         return read_session_id()
     except Exception as e:
@@ -40,6 +63,49 @@ def update_session():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/session', methods=['POST'])
+def create_session():
+    """Create a server-side session stored in Redis and return a session token (also set as HttpOnly cookie)."""
+    if not session_store:
+        return jsonify({"error": "Session store not configured"}), 500
+
+    data = request.json or {}
+    session_cookie = data.get('session_id')
+    if not session_cookie:
+        return jsonify({"error": "No session_id provided"}), 400
+
+    try:
+        token = session_store.create_session(session_cookie)
+        resp = jsonify({"success": True, "session_token": token})
+        resp.set_cookie('SUNOPO_SESSION_TOKEN', token, httponly=True, samesite='Lax', max_age=SESSION_TTL_SECONDS)
+        return resp
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/session/validate', methods=['GET'])
+def validate_session():
+    if not session_store:
+        return jsonify({"valid": False, "reason": "no-session-store"}), 200
+
+    token = request.cookies.get('SUNOPO_SESSION_TOKEN') or request.args.get('token')
+    if not token:
+        return jsonify({"valid": False}), 200
+
+    cookie = session_store.get_session(token)
+    ttl = session_store.ttl(token)
+    if cookie:
+        return jsonify({"valid": True, "expires_in": ttl}), 200
+    return jsonify({"valid": False}), 200
+
+
+@app.route('/api/session/<token>', methods=['DELETE'])
+def revoke_session(token):
+    if not session_store:
+        return jsonify({"error": "Session store not configured"}), 500
+
+    session_store.revoke(token)
+    return jsonify({"success": True}), 200
 
 @app.route("/health", methods=["GET"])
 def health():
@@ -55,16 +121,16 @@ def get_songs():
 
     # Pagination params
     try:
-        page = int(request.args.get('page', 1))
+        page = int(request.args.get("page", 1))
     except ValueError:
         page = 1
     try:
-        per_page = int(request.args.get('per_page', 50))
+        per_page = int(request.args.get("per_page", 50))
     except ValueError:
         per_page = 50
     per_page = max(1, min(per_page, 100))
-    all_flag = str(request.args.get('all', 'false')).lower() in ('true', '1')
-    max_pages = request.args.get('max_pages')
+    all_flag = str(request.args.get("all", "false")).lower() in ("true", "1")
+    max_pages = request.args.get("max_pages")
     max_pages = int(max_pages) if max_pages and max_pages.isdigit() else None
 
     try:
@@ -73,55 +139,65 @@ def get_songs():
         if all_flag:
             # Iterate all songs (careful of very large libraries)
             enriched_songs = []
-            for s in client.iter_songs(page_size=per_page, max_pages=max_pages, start_page=page):
-                enriched_songs.append({
-                    "id": s.id,
-                    "title": s.title,
-                    "artist": "Iyari Gomez",
-                    "author": "Iyari Cancino Gomez",
-                    "image_url": getattr(s, 'image_url', None),
-                    "audio_url": getattr(s, 'audio_url', None),
-                    "video_url": getattr(s, 'video_url', None),
-                    "created_at": getattr(s, 'created_at', None),
-                    "status": getattr(s, 'status', None),
-                    "prompt": getattr(s, 'prompt', None),
-                    "lyrics": getattr(s, 'lyrics', ''),
-                })
-            return jsonify({
-                "items": enriched_songs,
-                "page": page,
-                "per_page": per_page,
-                "has_more": False,
-                "next_page": None,
-            })
+            for s in client.iter_songs(
+                page_size=per_page, max_pages=max_pages, start_page=page
+            ):
+                enriched_songs.append(
+                    {
+                        "id": s.id,
+                        "title": s.title,
+                        "artist": "Iyari Gomez",
+                        "author": "Iyari Cancino Gomez",
+                        "image_url": getattr(s, "image_url", None),
+                        "audio_url": getattr(s, "audio_url", None),
+                        "video_url": getattr(s, "video_url", None),
+                        "created_at": getattr(s, "created_at", None),
+                        "status": getattr(s, "status", None),
+                        "prompt": getattr(s, "prompt", None),
+                        "lyrics": getattr(s, "lyrics", ""),
+                    }
+                )
+            return jsonify(
+                {
+                    "items": enriched_songs,
+                    "page": page,
+                    "per_page": per_page,
+                    "has_more": False,
+                    "next_page": None,
+                }
+            )
         else:
             songs = client.list_songs(page=page, limit=per_page)
             enriched_songs = []
             for s in songs:
-                enriched_songs.append({
-                    "id": s.id,
-                    "title": s.title,
-                    "artist": "Iyari Gomez",
-                    "author": "Iyari Cancino Gomez",
-                    "image_url": getattr(s, 'image_url', None),
-                    "audio_url": getattr(s, 'audio_url', None),
-                    "video_url": getattr(s, 'video_url', None),
-                    "created_at": getattr(s, 'created_at', None),
-                    "status": getattr(s, 'status', None),
-                    "prompt": getattr(s, 'prompt', None),
-                    "lyrics": getattr(s, 'lyrics', ''),
-                })
+                enriched_songs.append(
+                    {
+                        "id": s.id,
+                        "title": s.title,
+                        "artist": "Iyari Gomez",
+                        "author": "Iyari Cancino Gomez",
+                        "image_url": getattr(s, "image_url", None),
+                        "audio_url": getattr(s, "audio_url", None),
+                        "video_url": getattr(s, "video_url", None),
+                        "created_at": getattr(s, "created_at", None),
+                        "status": getattr(s, "status", None),
+                        "prompt": getattr(s, "prompt", None),
+                        "lyrics": getattr(s, "lyrics", ""),
+                    }
+                )
 
             has_more = len(songs) == per_page
             next_page = page + 1 if has_more else None
 
-            return jsonify({
-                "items": enriched_songs,
-                "page": page,
-                "per_page": per_page,
-                "has_more": has_more,
-                "next_page": next_page,
-            })
+            return jsonify(
+                {
+                    "items": enriched_songs,
+                    "page": page,
+                    "per_page": per_page,
+                    "has_more": has_more,
+                    "next_page": next_page,
+                }
+            )
 
     except Exception as e:
         print(f"Suno API Error: {e}")
