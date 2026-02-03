@@ -18,6 +18,26 @@
         if (parts.length === 2) return parts.pop().split(';').shift();
     }
 
+    function sendToSunopo(path, data, callback) {
+        const token = (() => { try { return localStorage.getItem('SUNOPO_SESSION_TOKEN'); } catch (e) { return null; } })();
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) {
+            headers['X-Session-Token'] = token;
+            headers['Authorization'] = 'Bearer ' + token;
+        }
+
+        GM_xmlhttpRequest({
+            method: data ? "POST" : "GET",
+            url: `http://localhost:5555${path}`,
+            data: data ? JSON.stringify(data) : undefined,
+            headers: headers,
+            withCredentials: true,
+            onload: function (response) {
+                if (callback) callback(response);
+            }
+        });
+    }
+
     function syncSession() {
         // En Suno, el ID de sesión suele estar en la cookie '__client' o similar
         // Pero lo más seguro es capturarlo de las cabeceras o de todas las cookies
@@ -26,27 +46,18 @@
         if (sessionId && sessionId.includes('sid=')) {
             console.log("🚀 Suno Sovereign Link: Sincronizando con Sunopo...");
 
-            GM_xmlhttpRequest({
-                method: "POST",
-                url: "http://localhost:5555/api/session",
-                data: JSON.stringify({ session_id: sessionId }),
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                withCredentials: true,
-                onload: function (response) {
-                    try {
-                        const data = JSON.parse(response.responseText);
-                        if (data.success && data.session_token) {
-                            // Store token in the page's localStorage so other scripts can use it
-                            try { localStorage.setItem('SUNOPO_SESSION_TOKEN', data.session_token); } catch (e) {}
-                            console.log("✅ Sunopo session created and token stored.");
-                        } else if (data.success) {
-                            console.log("✅ Sunopo session created (no token returned)");
-                        }
-                    } catch (e) {
-                        console.log('Unexpected response from Sunopo session endpoint', e);
+            sendToSunopo('/api/session', { session_id: sessionId }, function(response) {
+                try {
+                    const data = JSON.parse(response.responseText);
+                    if (data.success && data.session_token) {
+                        // Store token in the page's localStorage so other scripts can use it
+                        try { localStorage.setItem('SUNOPO_SESSION_TOKEN', data.session_token); } catch (e) {}
+                        console.log("✅ Sunopo session created and token stored.");
+                    } else if (data.success) {
+                        console.log("✅ Sunopo session created (no token returned)");
                     }
+                } catch (e) {
+                    console.log('Unexpected response from Sunopo session endpoint', e);
                 }
             });
         }
