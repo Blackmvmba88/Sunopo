@@ -22,15 +22,17 @@ def get_suno_list():
         # Use iterator to stream through pages safely
         count = 0
         for s in client.iter_songs(page_size=100):
-            all_songs.append({
-                "ID": s.id,
-                "Title": s.title,
-                "Artist": "Iyari Gomez",
-                "Author": "Iyari Cancino Gomez",
-                "Status": getattr(s, 'status', None),
-                "Created": getattr(s, 'created_at', None),
-                "Audio_URL": getattr(s, 'audio_url', None),
-            })
+            all_songs.append(
+                {
+                    "ID": s.id,
+                    "Title": s.title,
+                    "Artist": "Iyari Gomez",
+                    "Author": "Iyari Cancino Gomez",
+                    "Status": getattr(s, "status", None),
+                    "Created": getattr(s, "created_at", None),
+                    "Audio_URL": getattr(s, "audio_url", None),
+                }
+            )
             count += 1
             if count % 500 == 0:
                 print(f"   Procesados {count} temas...")

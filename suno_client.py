@@ -16,7 +16,9 @@ class SunoClient:
             return self.session_getter()
         raise RuntimeError("No session cookie available for Suno client")
 
-    def _request_with_retry(self, func, *args, retries: int = 3, backoff_base: float = 0.5, **kwargs):
+    def _request_with_retry(
+        self, func, *args, retries: int = 3, backoff_base: float = 0.5, **kwargs
+    ):
         attempts = 0
         while attempts < retries:
             try:
@@ -34,7 +36,9 @@ class SunoClient:
         client = Suno(cookie=cookie)
         return self._request_with_retry(client.songs.list, page=page, limit=limit)
 
-    def iter_songs(self, page_size: int = 100, max_pages: int = None, start_page: int = 1):
+    def iter_songs(
+        self, page_size: int = 100, max_pages: int = None, start_page: int = 1
+    ):
         """
         Generator that yields songs from Suno in pages. Handles retries and stops when an empty page is returned or when max_pages reached.
         """
@@ -46,7 +50,9 @@ class SunoClient:
             if max_pages is not None and pages_yielded >= max_pages:
                 break
             try:
-                songs = self._request_with_retry(client.songs.list, page=page, limit=page_size)
+                songs = self._request_with_retry(
+                    client.songs.list, page=page, limit=page_size
+                )
             except Exception:
                 # Bubble up - caller may choose to handle
                 raise

@@ -6,7 +6,9 @@ from config import REDIS_URL, SESSION_TTL_SECONDS, SESSION_FERNET_KEY
 
 
 class SessionStore:
-    def __init__(self, redis_url: str = None, ttl: int = 86400, fernet_key: Optional[str] = None):
+    def __init__(
+        self, redis_url: str = None, ttl: int = 86400, fernet_key: Optional[str] = None
+    ):
         self.ttl = ttl
         if redis_url:
             self.client = redis.from_url(redis_url)
@@ -14,11 +16,15 @@ class SessionStore:
             self.client = None
 
         if fernet_key:
-            self.fernet = Fernet(fernet_key.encode() if isinstance(fernet_key, str) else fernet_key)
+            self.fernet = Fernet(
+                fernet_key.encode() if isinstance(fernet_key, str) else fernet_key
+            )
         else:
             self.fernet = None
             # Warn at runtime if encryption is not configured
-            print("Warning: SESSION_FERNET_KEY not set. Session values will be stored in Redis unencrypted.")
+            print(
+                "Warning: SESSION_FERNET_KEY not set. Session values will be stored in Redis unencrypted."
+            )
 
     def _encrypt(self, data: str) -> str:
         if not self.fernet:

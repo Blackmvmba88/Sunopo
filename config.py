@@ -31,6 +31,7 @@ REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 SESSION_TTL_SECONDS = int(os.environ.get("SESSION_TTL_SECONDS", "86400"))  # default 24h
 SESSION_FERNET_KEY = os.environ.get("SESSION_FERNET_KEY")  # base64 key for Fernet
 
+
 # Ensure directories exist
 def ensure_dirs():
     EXPORTS_DIR.mkdir(parents=True, exist_ok=True)

@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import BinaryIO
 import shutil
 
+
 class LocalStorage:
     def __init__(self, base_path: Path):
         self.base_path = Path(base_path)
@@ -11,7 +12,7 @@ class LocalStorage:
         dest = self.base_path / key
         # Ensure parent
         dest.parent.mkdir(parents=True, exist_ok=True)
-        with open(dest, 'wb') as f:
+        with open(dest, "wb") as f:
             shutil.copyfileobj(data, f)
         return str(dest)
 

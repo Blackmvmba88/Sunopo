@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUNOPO — Sovereign Distribution Center</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+    <div class="container fade-in">
+        <header>
+            <div class="logo-section">
+                <h1>SUNOPO</h1>
+                <span>BY IYARI GOMEZ SYSTEM</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="syncSongs()">
+                    <i data-lucide="refresh-cw"></i> Sincronizar Suno
+                </button>
+            </div>
+        </header>
+
+        <main class="dashboard">
+            <section class="content">
+                <div class="track-list" id="trackList">
+                    <!-- Tracks will be injected here -->
+                    <div class="loading-state">Conectando con el universo Suno...</div>
+                </div>
+            </section>
+
+            <aside class="sidebar">
+                <div class="ai-assistant">
+                    <div class="ai-header">
+                        <div class="pulse"></div>
+                        <span>Iyari AI Assistant</span>
+                    </div>
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="msg">Bienvenido, Iyari. Todas tus canciones están listas para ser distribuidas con la metadata correcta.</div>
+                    </div>
+                    <div class="chat-input">
+                        <input type="text" placeholder="Pregúntale a la IA sobre tus temas..." id="chatInput">
+                    </div>
+                </div>
+
+                <div class="stats-card track-card" style="padding: 1rem; flex-direction: column; align-items: flex-start;">
+                    <span class="badge artist">Métrica de Distribución</span>
+                    <h2 style="margin-top: 0.5rem;">Soberanía Total</h2>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

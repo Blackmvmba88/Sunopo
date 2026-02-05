@@ -23,21 +23,48 @@ from sessions import SessionStore
 # Initialize session store (if REDIS_URL set)
 session_store = None
 try:
-    session_store = SessionStore(redis_url=REDIS_URL, ttl=SESSION_TTL_SECONDS, fernet_key=SESSION_FERNET_KEY)
+    session_store = SessionStore(
+        redis_url=REDIS_URL, ttl=SESSION_TTL_SECONDS, fernet_key=SESSION_FERNET_KEY
+    )
 except Exception as e:
     print(f"Warning: Session store not configured: {e}")
 
 
 def get_session_id():
-    # Prefer active HTTP cookie token -> resolve in Redis. Fallback to session file.
+    # Prefer token provided via cookie, header or query param -> resolve in Redis. Fallback to session file.
     try:
         from flask import request
 
-        token = request.cookies.get('SUNOPO_SESSION_TOKEN')
+        # 1. Cookie
+        token = request.cookies.get("SUNOPO_SESSION_TOKEN")
         if token and session_store:
             cookie = session_store.get_session(token)
             if cookie:
                 return cookie
+
+        # 2. Authorization header: Bearer <token>
+        auth = request.headers.get("Authorization")
+        if auth and auth.lower().startswith("bearer "):
+            token = auth.split(None, 1)[1].strip()
+            if token and session_store:
+                cookie = session_store.get_session(token)
+                if cookie:
+                    return cookie
+
+        # 3. Custom header
+        token = request.headers.get("X-Session-Token")
+        if token and session_store:
+            cookie = session_store.get_session(token)
+            if cookie:
+                return cookie
+
+        # 4. Query param fallback (e.g., ?token=...)
+        token = request.args.get("token")
+        if token and session_store:
+            cookie = session_store.get_session(token)
+            if cookie:
+                return cookie
+
     except Exception:
         # No request context or redis not available
         pass
@@ -63,32 +90,39 @@ def update_session():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/session', methods=['POST'])
+
+@app.route("/api/session", methods=["POST"])
 def create_session():
     """Create a server-side session stored in Redis and return a session token (also set as HttpOnly cookie)."""
     if not session_store:
         return jsonify({"error": "Session store not configured"}), 500
 
     data = request.json or {}
-    session_cookie = data.get('session_id')
+    session_cookie = data.get("session_id")
     if not session_cookie:
         return jsonify({"error": "No session_id provided"}), 400
 
     try:
         token = session_store.create_session(session_cookie)
         resp = jsonify({"success": True, "session_token": token})
-        resp.set_cookie('SUNOPO_SESSION_TOKEN', token, httponly=True, samesite='Lax', max_age=SESSION_TTL_SECONDS)
+        resp.set_cookie(
+            "SUNOPO_SESSION_TOKEN",
+            token,
+            httponly=True,
+            samesite="Lax",
+            max_age=SESSION_TTL_SECONDS,
+        )
         return resp
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/session/validate', methods=['GET'])
+@app.route("/api/session/validate", methods=["GET"])
 def validate_session():
     if not session_store:
         return jsonify({"valid": False, "reason": "no-session-store"}), 200
 
-    token = request.cookies.get('SUNOPO_SESSION_TOKEN') or request.args.get('token')
+    token = request.cookies.get("SUNOPO_SESSION_TOKEN") or request.args.get("token")
     if not token:
         return jsonify({"valid": False}), 200
 
@@ -99,13 +133,14 @@ def validate_session():
     return jsonify({"valid": False}), 200
 
 
-@app.route('/api/session/<token>', methods=['DELETE'])
+@app.route("/api/session/<token>", methods=["DELETE"])
 def revoke_session(token):
     if not session_store:
         return jsonify({"error": "Session store not configured"}), 500
 
     session_store.revoke(token)
     return jsonify({"success": True}), 200
+
 
 @app.route("/health", methods=["GET"])
 def health():
