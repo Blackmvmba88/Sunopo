@@ -1,5 +1,5 @@
 from typing import List, Optional
-from suno import Suno
+from suno import Suno, ModelVersions
 import time
 
 
@@ -75,3 +75,28 @@ class SunoClient:
             if s.id == song_id:
                 return s
         return None
+
+    def generate(
+        self,
+        prompt: str,
+        is_custom: bool = False,
+        tags: str = "",
+        title: str = "",
+        make_instrumental: bool = False,
+        wait_audio: bool = True,
+        model_version: str = "chirp-v3-5",
+    ):
+        """
+        Generate music using Suno.
+        """
+        cookie = self._get_cookie()
+        client = Suno(cookie=cookie, model_version=model_version)
+        return self._request_with_retry(
+            client.generate,
+            prompt=prompt,
+            is_custom=is_custom,
+            tags=tags,
+            title=title,
+            make_instrumental=make_instrumental,
+            wait_audio=wait_audio,
+        )
