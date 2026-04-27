@@ -148,6 +148,59 @@ def health():
     return jsonify({"status": "ok"})
 
 
+@app.route("/api/generate", methods=["POST"])
+def generate_audio():
+    session_id = get_session_id()
+    if not session_id:
+        return jsonify({"error": "Session ID not found"}), 400
+
+    data = request.json or {}
+    prompt = data.get("prompt")
+    if not prompt:
+        return jsonify({"error": "No prompt provided"}), 400
+
+    is_custom = data.get("is_custom", False)
+    tags = data.get("tags", "")
+    title = data.get("title", "")
+    make_instrumental = data.get("make_instrumental", False)
+    wait_audio = data.get("wait_audio", True)
+
+    try:
+        client = SunoClient(cookie=session_id, session_getter=get_session_id)
+        clips = client.generate(
+            prompt=prompt,
+            is_custom=is_custom,
+            tags=tags,
+            title=title,
+            make_instrumental=make_instrumental,
+            wait_audio=wait_audio,
+        )
+
+        # Convert clips to serializable format
+        result = []
+        for clip in clips:
+            result.append(
+                {
+                    "id": clip.id,
+                    "title": clip.title,
+                    "image_url": clip.image_url,
+                    "audio_url": clip.audio_url,
+                    "video_url": clip.video_url,
+                    "created_at": clip.created_at,
+                    "status": clip.status,
+                    "metadata": {
+                        "tags": clip.metadata.tags,
+                        "prompt": clip.metadata.prompt,
+                    },
+                }
+            )
+
+        return jsonify({"success": True, "clips": result})
+    except Exception as e:
+        print(f"Generation error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/songs", methods=["GET"])
 def get_songs():
     session_id = get_session_id()

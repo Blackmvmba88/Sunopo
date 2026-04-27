@@ -42,7 +42,7 @@ def test_iter_songs_multiple_pages(monkeypatch):
     results = list(client.iter_songs(page_size=3))
     assert len(results) == 9
     assert results[0].id == "id_0"
-    assert results[-1].id == "id_2"
+    assert results[-1].id == "id_8"
 
 
 def test_iter_songs_empty_page(monkeypatch):
