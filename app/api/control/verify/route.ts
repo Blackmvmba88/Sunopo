@@ -1,33 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createHmac, timingSafeEqual } from "node:crypto";
-
-const COOKIE_NAME = "SUNOPO_CONTROL_AUTH";
-
-function getControlSecret(): string | null {
-  return process.env.CONTROL_SECRET || null;
-}
-
-function createToken(secret: string): string {
-  return createHmac("sha256", secret).update("sunopo-control").digest("hex");
-}
-
-function hasValidToken(request: NextRequest, secret: string): boolean {
-  const supplied = request.cookies.get(COOKIE_NAME)?.value;
-  if (!supplied) return false;
-
-  const expected = createToken(secret);
-  const suppliedBuffer = Buffer.from(supplied);
-  const expectedBuffer = Buffer.from(expected);
-  return (
-    suppliedBuffer.length === expectedBuffer.length &&
-    timingSafeEqual(suppliedBuffer, expectedBuffer)
-  );
-}
+import {
+  CONTROL_COOKIE_NAME,
+  createControlToken,
+  getControlSecret,
+  isControlAuthenticated,
+} from "../auth";
 
 export async function GET(request: NextRequest) {
   const controlSecret = getControlSecret();
   return NextResponse.json({
-    authenticated: Boolean(controlSecret && hasValidToken(request, controlSecret)),
+    authenticated: Boolean(controlSecret && isControlAuthenticated(request)),
   });
 }
 
@@ -44,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     if (secret === controlSecret) {
       const response = NextResponse.json({ success: true });
-      response.cookies.set(COOKIE_NAME, createToken(controlSecret), {
+      response.cookies.set(CONTROL_COOKIE_NAME, createControlToken(controlSecret), {
         httpOnly: true,
         sameSite: "strict",
         secure: process.env.NODE_ENV === "production",
@@ -69,7 +51,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE() {
   const response = NextResponse.json({ success: true });
-  response.cookies.set(COOKIE_NAME, "", {
+  response.cookies.set(CONTROL_COOKIE_NAME, "", {
     httpOnly: true,
     sameSite: "strict",
     secure: process.env.NODE_ENV === "production",

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BlackMamba",
-  description: "Audio generation app with Suno-inspired layout",
+  title: "Sunopo Studio",
+  description: "Professional catalog, metadata, and distribution workspace for Suno creators",
 };
 
 export default function RootLayout({
@@ -12,7 +12,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body className="antialiased">
         {children}
       </body>

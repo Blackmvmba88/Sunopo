@@ -16,3 +16,187 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   min-height: 100vh;
 }
+
+button,
+a,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.studio-shell {
+  background:
+    radial-gradient(circle at 76% -10%, rgba(164, 110, 37, 0.12), transparent 32rem),
+    radial-gradient(circle at 16% 110%, rgba(98, 57, 30, 0.1), transparent 34rem),
+    #090909;
+}
+
+.studio-panel,
+.studio-card {
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(18, 18, 18, 0.88);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(24px);
+}
+
+.studio-card {
+  background: linear-gradient(145deg, rgba(24, 24, 24, 0.92), rgba(15, 15, 15, 0.92));
+}
+
+.brand-mark {
+  display: grid;
+  width: 2.35rem;
+  height: 2.35rem;
+  place-items: center;
+  border: 1px solid rgba(253, 224, 71, 0.35);
+  border-radius: 0.85rem;
+  background: linear-gradient(145deg, #f5d56d, #8c5728);
+  box-shadow: 0 8px 30px rgba(196, 129, 45, 0.2);
+  color: #100d08;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.studio-pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(253, 224, 71, 0.16);
+  border-radius: 999px;
+  background: rgba(253, 224, 71, 0.06);
+  padding: 0.35rem 0.6rem;
+  color: #dbc789;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.studio-input,
+.studio-search {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+  color: white;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.studio-input:focus,
+.studio-search:focus-within {
+  border-color: rgba(250, 204, 21, 0.35);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.studio-primary {
+  background: linear-gradient(135deg, #f5df91, #bf7a35);
+  box-shadow: 0 10px 28px rgba(184, 111, 39, 0.12);
+  color: #171109;
+  transition: filter 160ms ease, transform 160ms ease;
+}
+
+.studio-primary:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.studio-secondary {
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.035);
+  color: #d4d4d8;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.studio-secondary:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: white;
+}
+
+.studio-nav {
+  border-radius: 0.9rem;
+  padding: 0.75rem 0.85rem;
+  color: #71717a;
+  font-size: 0.8rem;
+  text-align: left;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.studio-nav:hover,
+.studio-nav-active {
+  background: rgba(255, 255, 255, 0.045);
+  color: #f4f4f5;
+}
+
+.cover-gradient {
+  display: grid;
+  width: 2.55rem;
+  height: 2.55rem;
+  flex: none;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.cover-gradient-1 { background: linear-gradient(145deg, #5b291e, #17100f); }
+.cover-gradient-2 { background: linear-gradient(145deg, #243b38, #101716); }
+.cover-gradient-3 { background: linear-gradient(145deg, #47395c, #15121b); }
+.cover-gradient-4 { background: linear-gradient(145deg, #5a4922, #18150e); }
+
+.status-dot {
+  display: inline-block;
+  width: 0.4rem;
+  height: 0.4rem;
+  margin-right: 0.5rem;
+  border-radius: 999px;
+}
+
+.status-ready {
+  background: #6ee7b7;
+  box-shadow: 0 0 0 4px rgba(110, 231, 183, 0.08);
+}
+
+.status-processing {
+  background: #facc15;
+  box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.08);
+}
+
+.inspector-cover {
+  background:
+    linear-gradient(0deg, rgba(10, 10, 10, 0.92), rgba(10, 10, 10, 0.08)),
+    radial-gradient(circle at 70% 20%, rgba(239, 190, 92, 0.55), transparent 32%),
+    linear-gradient(135deg, #5d2c1d, #17120f 62%);
+}
+
+.studio-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(90px);
+  opacity: 0.22;
+}
+
+.studio-orb-one {
+  top: -8rem;
+  right: 5%;
+  width: 26rem;
+  height: 26rem;
+  background: #a96a2f;
+}
+
+.studio-orb-two {
+  bottom: -12rem;
+  left: 4%;
+  width: 28rem;
+  height: 28rem;
+  background: #4d2f21;
+}
+
+.studio-loader {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  border-top-color: #e7c774;
+  border-radius: 999px;
+  animation: studio-spin 700ms linear infinite;
+}
+
+@keyframes studio-spin {
+  to { transform: rotate(360deg); }
+}
