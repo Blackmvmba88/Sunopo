@@ -1,11 +1,22 @@
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
+
+interface AudioClip {
+  id: string;
+  title?: string;
+  image_url?: string;
+  audio_url?: string;
+  metadata?: {
+    tags?: string;
+  };
+}
 
 export default function DisplayPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [clips, setClips] = useState<any[]>([]);
+  const [clips, setClips] = useState<AudioClip[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const [prompt, setPrompt] = useState('');
@@ -24,9 +35,13 @@ export default function DisplayPage() {
     setClips([]);
     setError(null);
 
+    let progressInterval: ReturnType<typeof setInterval> | undefined;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 300_000);
+
     try {
       // Simulate progress
-      const progressInterval = setInterval(() => {
+      progressInterval = setInterval(() => {
         setProgress((prev) => {
           if (prev >= 95) {
             clearInterval(progressInterval);
@@ -48,26 +63,37 @@ export default function DisplayPage() {
           is_custom: isCustom,
           wait_audio: true,
         }),
+        signal: controller.signal,
       });
 
-      clearInterval(progressInterval);
+      if (progressInterval) clearInterval(progressInterval);
 
+      const contentType = response.headers.get('content-type') || '';
+      const data = contentType.includes('application/json')
+        ? await response.json()
+        : null;
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al generar audio');
+        throw new Error(data?.error || 'Error al generar audio');
       }
 
-      const data = await response.json();
-      if (data.success && data.clips) {
+      if (data?.success && Array.isArray(data.clips)) {
         setClips(data.clips);
         setProgress(100);
       } else {
         throw new Error('No se recibieron pistas generadas');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
+      const message =
+        err instanceof Error && err.name === 'AbortError'
+          ? 'La generación tardó demasiado. Inténtalo de nuevo.'
+          : err instanceof Error
+            ? err.message
+            : 'Error desconocido';
+      setError(message);
       setProgress(0);
     } finally {
+      if (progressInterval) clearInterval(progressInterval);
+      clearTimeout(timeout);
       setIsGenerating(false);
     }
   };
@@ -204,8 +230,14 @@ export default function DisplayPage() {
                 {clips.map((clip) => (
                   <div key={clip.id} className="bg-zinc-800/50 rounded-2xl overflow-hidden border border-zinc-700 flex flex-col md:flex-row">
                     {clip.image_url && (
-                      <div className="w-full md:w-48 h-48 flex-shrink-0">
-                        <img src={clip.image_url} alt={clip.title} className="w-full h-full object-cover" />
+                      <div className="relative w-full md:w-48 h-48 flex-shrink-0">
+                        <Image
+                          src={clip.image_url}
+                          alt={clip.title || 'Portada del audio'}
+                          fill
+                          sizes="(min-width: 768px) 192px, 100vw"
+                          className="object-cover"
+                        />
                       </div>
                     )}
                     <div className="p-6 flex-grow flex flex-col justify-between space-y-4">
@@ -229,13 +261,13 @@ export default function DisplayPage() {
 
                       <div className="flex space-x-3">
                         <button
-                          onClick={() => handleDownload(clip.audio_url, `${clip.title || 'audio'}.mp3`)}
+                          onClick={() => handleDownload(clip.audio_url || '', `${clip.title || 'audio'}.mp3`)}
                           className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors border border-zinc-600"
                         >
                           Descargar
                         </button>
                         <button
-                          onClick={() => handleShare(clip.audio_url, clip.title)}
+                          onClick={() => handleShare(clip.audio_url || '', clip.title || 'Audio')}
                           className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors border border-zinc-600"
                         >
                           Compartir

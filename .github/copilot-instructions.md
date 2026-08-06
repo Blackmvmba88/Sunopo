@@ -7,8 +7,8 @@ Purpose
 
 What to check first (actionable, in order)
 
-1. Inspect `app.py` and `script.js` to learn runtime behavior (Dev server: Flask, debug=True, port=5555). Frontend expects `API_URL = 'http://localhost:5555/api'`.
-2. Locate the Suno session path constant (`SESSION_ID_PATH`) used by `app.py` and `master_sync.py`. By default it uses `/Users/blackmamba/suno_downloader/suno_session.txt`—this must exist or be provided by the user/Tampermonkey script.
+1. Inspect `app.py` and `script.js` to learn runtime behavior (Dev server: Flask, debug controlled by `FLASK_DEBUG`, port 5555). Frontend expects `API_URL = 'http://localhost:5555/api'`.
+2. Locate the Suno session path constant (`SESSION_ID_PATH`) used by `app.py` and `master_sync.py`. By default it uses `.data/suno_session.txt` under `SUNOPO_BASE_DIR`; it must exist or be provided by the user/Tampermonkey script.
 3. Check for system deps: `pydub` requires ffmpeg installed on macOS (`brew install ffmpeg`).
 4. Confirm missing dependency manifest (`requirements.txt` or `pyproject.toml`). If absent, ask whether to add one and which Python version to target.
 5. Review `reports/` and `exports/` locations. Paths are currently absolute (macOS /Users/blackmamba/...), so update constants when running in a different environment.
@@ -48,7 +48,7 @@ Session handling & automation 🔐
 - Suno client usage pattern:
   - Prefer `SunoClient.iter_songs()` for streaming large libraries (used in `master_sync.py`) to avoid loading all pages into memory at once. Unit tests show how to monkeypatch `suno.Suno` for offline testing.
 
-- Note on absolute paths: by default `SESSION_ID_PATH` points to `/Users/blackmamba/suno_downloader/suno_session.txt`—update `SUNO_SESSION_ID_PATH` or `SUNOPO_BASE_DIR` in `config.py` or via env vars when running on another machine.
+- Session path: by default `SESSION_ID_PATH` points to `.data/suno_session.txt` under `SUNOPO_BASE_DIR`; override `SUNO_SESSION_ID_PATH` when needed.
 
 Key workflows & scripts (what they do)
 

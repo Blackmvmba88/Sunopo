@@ -1,41 +1,60 @@
 'use client';
 
-import { useState } from 'react';
-
-// Helper function to check initial auth state
-const getInitialAuthState = () => {
-  if (typeof window !== 'undefined') {
-    return sessionStorage.getItem('control_auth') === 'true';
-  }
-  return false;
-};
+import { useEffect, useState } from 'react';
 
 export default function ControlPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(getInitialAuthState);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [secretInput, setSecretInput] = useState('');
   const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetch('/api/control/verify')
+      .then((response) => response.json())
+      .then((data) => setIsAuthenticated(data.authenticated === true))
+      .catch(() => setIsAuthenticated(false))
+      .finally(() => setIsCheckingAuth(false));
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // NOTE: In production, use server-side authentication
-    // This is a simple client-side demo for illustration purposes only
-    const secret = process.env.NEXT_PUBLIC_CONTROL_SECRET || 'blackmamba2024';
-    
-    if (secretInput === secret) {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('control_auth', 'true');
-      setError('');
-    } else {
-      setError('Invalid secret. Please try again.');
+    setError('');
+    try {
+      const response = await fetch('/api/control/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret: secretInput }),
+      });
+
+      if (response.ok) {
+        setIsAuthenticated(true);
+        setSecretInput('');
+        return;
+      }
+      setError(
+        response.status === 503
+          ? 'Control panel is not configured.'
+          : 'Invalid secret. Please try again.'
+      );
+    } catch {
+      setError('Unable to contact the authentication service.');
+    } finally {
       setSecretInput('');
     }
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    sessionStorage.removeItem('control_auth');
-    setSecretInput('');
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/control/verify', { method: 'DELETE' });
+    } finally {
+      setIsAuthenticated(false);
+      setSecretInput('');
+    }
   };
+
+  if (isCheckingAuth) {
+    return <div className="min-h-screen bg-black" aria-busy="true" />;
+  }
 
   if (!isAuthenticated) {
     return (

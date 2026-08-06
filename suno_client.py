@@ -1,6 +1,8 @@
-from typing import List, Optional
-from suno import Suno, ModelVersions
+import random
 import time
+from typing import List, Optional
+
+from suno import Suno
 
 
 class SunoClient:
@@ -8,6 +10,7 @@ class SunoClient:
         # cookie can be the raw cookie string required by Suno
         self.cookie = cookie
         self.session_getter = session_getter
+        self._client = None
 
     def _get_cookie(self):
         if self.cookie:
@@ -20,20 +23,29 @@ class SunoClient:
         self, func, *args, retries: int = 3, backoff_base: float = 0.5, **kwargs
     ):
         attempts = 0
+        last_error = None
         while attempts < retries:
             try:
                 return func(*args, **kwargs)
             except Exception as e:
+                last_error = e
                 attempts += 1
+                if attempts >= retries:
+                    break
                 wait = backoff_base * (2 ** (attempts - 1))
-                # add jitter
-                time.sleep(wait + (0.1 * attempts))
-        raise
+                time.sleep(wait + random.uniform(0, wait * 0.1))
+        if last_error is not None:
+            raise last_error
+        raise RuntimeError("Request failed without an exception")
+
+    def _get_client(self):
+        if self._client is None:
+            self._client = Suno(cookie=self._get_cookie())
+        return self._client
 
     def list_songs(self, page: int = 1, limit: int = 100) -> List:
         # Basic wrapper using _request_with_retry
-        cookie = self._get_cookie()
-        client = Suno(cookie=cookie)
+        client = self._get_client()
         return self._request_with_retry(client.songs.list, page=page, limit=limit)
 
     def iter_songs(
@@ -42,8 +54,7 @@ class SunoClient:
         """
         Generator that yields songs from Suno in pages. Handles retries and stops when an empty page is returned or when max_pages reached.
         """
-        cookie = self._get_cookie()
-        client = Suno(cookie=cookie)
+        client = self._get_client()
         page = start_page
         pages_yielded = 0
         while True:
