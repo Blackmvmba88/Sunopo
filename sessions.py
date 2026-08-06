@@ -9,7 +9,7 @@ class SessionStore:
     def __init__(
         self, redis_url: str = None, ttl: int = 86400, fernet_key: Optional[str] = None
     ):
-        self.ttl = ttl
+        self.ttl_seconds = ttl
         if redis_url:
             self.client = redis.from_url(redis_url)
         else:
@@ -44,7 +44,7 @@ class SessionStore:
             raise RuntimeError("Redis client not configured")
         token = uuid.uuid4().hex
         value = self._encrypt(cookie_str)
-        self.client.setex(token, self.ttl, value)
+        self.client.setex(token, self.ttl_seconds, value)
         return token
 
     def get_session(self, token: str) -> Optional[str]:

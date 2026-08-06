@@ -1,18 +1,37 @@
-import os
-import requests
 import io
-from flask import Flask, jsonify, request, send_from_directory, send_file
+import logging
+import re
+
+import requests
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-from suno import Suno
 from pydub import AudioSegment
-import json
+from redis.exceptions import RedisError
+from suno import Suno
 
 from suno_client import SunoClient
 
 app = Flask(__name__)
 CORS(app)
 
-from config import EXPORTS_DIR, SESSION_ID_PATH, ensure_dirs, read_session_id
+from config import (
+    EXPORTS_DIR,
+    FLASK_DEBUG,
+    FLASK_HOST,
+    FLASK_PORT,
+    REDIS_URL,
+    SESSION_FERNET_KEY,
+    SESSION_ID_PATH,
+    SESSION_TTL_SECONDS,
+    ensure_dirs,
+    read_session_id,
+)
+
+logger = logging.getLogger(__name__)
+SAFE_SONG_ID = re.compile(r"^[A-Za-z0-9_-]+$")
+MAX_PROMPT_LENGTH = 5000
+MAX_TITLE_LENGTH = 200
+MAX_TAGS_LENGTH = 1000
 
 # Ensure directories exist on startup
 ensure_dirs()
@@ -27,7 +46,7 @@ try:
         redis_url=REDIS_URL, ttl=SESSION_TTL_SECONDS, fernet_key=SESSION_FERNET_KEY
     )
 except Exception as e:
-    print(f"Warning: Session store not configured: {e}")
+    logger.warning("Session store not configured: %s", type(e).__name__)
 
 
 def get_session_id():
@@ -44,8 +63,9 @@ def get_session_id():
 
         # 2. Authorization header: Bearer <token>
         auth = request.headers.get("Authorization")
-        if auth and auth.lower().startswith("bearer "):
-            token = auth.split(None, 1)[1].strip()
+        if auth:
+            scheme, separator, credentials = auth.partition(" ")
+            token = credentials.strip() if separator and scheme.lower() == "bearer" else ""
             if token and session_store:
                 cookie = session_store.get_session(token)
                 if cookie:
@@ -65,20 +85,20 @@ def get_session_id():
             if cookie:
                 return cookie
 
-    except Exception:
+    except (RuntimeError, OSError, RedisError):
         # No request context or redis not available
         pass
 
-    try:
-        return read_session_id()
-    except Exception as e:
-        print(f"Error leyendo session ID: {e}")
-        return None
+    return read_session_id()
+
+
+def is_valid_song_id(song_id):
+    return bool(SAFE_SONG_ID.fullmatch(song_id))
 
 
 @app.route("/api/update_session", methods=["POST"])
 def update_session():
-    data = request.json
+    data = request.get_json(silent=True) or {}
     session_id = data.get("session_id")
     if not session_id:
         return jsonify({"error": "No session_id provided"}), 400
@@ -87,8 +107,9 @@ def update_session():
         with open(SESSION_ID_PATH, "w") as f:
             f.write(session_id)
         return jsonify({"success": True, "message": "Session ID updated successfully"})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except OSError:
+        logger.exception("Unable to update session file")
+        return jsonify({"error": "Unable to update session"}), 500
 
 
 @app.route("/api/session", methods=["POST"])
@@ -113,8 +134,9 @@ def create_session():
             max_age=SESSION_TTL_SECONDS,
         )
         return resp
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except (RuntimeError, ValueError):
+        logger.exception("Unable to create session")
+        return jsonify({"error": "Unable to create session"}), 500
 
 
 @app.route("/api/session/validate", methods=["GET"])
@@ -156,12 +178,18 @@ def generate_audio():
 
     data = request.json or {}
     prompt = data.get("prompt")
-    if not prompt:
+    if not isinstance(prompt, str) or not prompt.strip():
         return jsonify({"error": "No prompt provided"}), 400
+    if len(prompt) > MAX_PROMPT_LENGTH:
+        return jsonify({"error": "Prompt is too long"}), 400
 
     is_custom = data.get("is_custom", False)
     tags = data.get("tags", "")
     title = data.get("title", "")
+    if not isinstance(tags, str) or len(tags) > MAX_TAGS_LENGTH:
+        return jsonify({"error": "Tags are invalid or too long"}), 400
+    if not isinstance(title, str) or len(title) > MAX_TITLE_LENGTH:
+        return jsonify({"error": "Title is invalid or too long"}), 400
     make_instrumental = data.get("make_instrumental", False)
     wait_audio = data.get("wait_audio", True)
 
@@ -189,16 +217,18 @@ def generate_audio():
                     "created_at": clip.created_at,
                     "status": clip.status,
                     "metadata": {
-                        "tags": clip.metadata.tags,
-                        "prompt": clip.metadata.prompt,
+                        "tags": getattr(getattr(clip, "metadata", None), "tags", ""),
+                        "prompt": getattr(
+                            getattr(clip, "metadata", None), "prompt", ""
+                        ),
                     },
                 }
             )
 
         return jsonify({"success": True, "clips": result})
-    except Exception as e:
-        print(f"Generation error: {e}")
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        logger.exception("Suno generation failed")
+        return jsonify({"error": "Audio generation failed"}), 502
 
 
 @app.route("/api/songs", methods=["GET"])
@@ -287,38 +317,16 @@ def get_songs():
                 }
             )
 
-    except Exception as e:
-        print(f"Suno API Error: {e}")
-        # Fallback to mock data for demonstration if API fails
-        mock_songs = [
-            {
-                "id": "mock_1",
-                "title": "Soberanía Digital (Demo)",
-                "artist": "Iyari Gomez",
-                "author": "Iyari Cancino Gomez",
-                "image_url": "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=400",
-                "audio_url": "#",
-                "status": "complete",
-                "created_at": "2024-03-20",
-                "lyrics": "[Verse 1]\nEn el código está mi voz\nSoberano en el servidor\nSin cadenas, sin temor\nIyari Gomez es el motor...",
-            },
-            {
-                "id": "mock_2",
-                "title": "Fuerza Alpha (Demo)",
-                "artist": "Iyari Gomez",
-                "author": "Iyari Cancino Gomez",
-                "image_url": "https://images.unsplash.com/photo-1514525253361-bee8718a74a1?w=400",
-                "audio_url": "#",
-                "status": "complete",
-                "created_at": "2024-03-20",
-                "lyrics": "[Chorus]\nFuerza Alpha, luz celestial\nMovimiento universal\nCancino Gomez lo hará real\nEn un mundo digital...",
-            },
-        ]
-        return jsonify(mock_songs)
+    except Exception:
+        logger.exception("Suno API request failed")
+        return jsonify({"error": "Unable to load songs"}), 502
 
 
 @app.route("/api/generate_wav/<song_id>", methods=["POST"])
 def generate_wav(song_id):
+    if not is_valid_song_id(song_id):
+        return jsonify({"error": "Invalid song ID"}), 400
+
     session_id = get_session_id()
     if not session_id:
         return jsonify({"error": "Session ID not found"}), 400
@@ -333,13 +341,14 @@ def generate_wav(song_id):
             return jsonify({"error": "Song or Audio URL not found"}), 404
 
         # Descargar el MP3
-        response = requests.get(song.audio_url)
+        response = requests.get(song.audio_url, timeout=(5, 30))
+        response.raise_for_status()
         audio_data = io.BytesIO(response.content)
 
         # Convertir a WAV de alta calidad (44.1kHz, 16-bit)
         audio = AudioSegment.from_file(audio_data, format="mp3")
         wav_filename = f"{song_id}.wav"
-        wav_path = os.path.join(EXPORTS_DIR, wav_filename)
+        wav_path = EXPORTS_DIR / wav_filename
 
         audio.export(wav_path, format="wav", parameters=["-ar", "44100", "-ac", "2"])
 
@@ -351,16 +360,24 @@ def generate_wav(song_id):
             }
         )
 
-    except Exception as e:
-        print(f"Error generando WAV: {e}")
-        return jsonify({"error": str(e)}), 500
+    except requests.Timeout:
+        return jsonify({"error": "Audio download timed out"}), 504
+    except requests.RequestException:
+        logger.exception("Audio download failed")
+        return jsonify({"error": "Audio download failed"}), 502
+    except Exception:
+        logger.exception("WAV generation failed")
+        return jsonify({"error": "WAV generation failed"}), 500
 
 
 @app.route("/api/download/<song_id>", methods=["GET"])
 def download_wav(song_id):
-    wav_path = os.path.join(EXPORTS_DIR, f"{song_id}.wav")
-    if os.path.exists(wav_path):
-        return send_file(wav_path, as_attachment=True)
+    if not is_valid_song_id(song_id):
+        return jsonify({"error": "Invalid song ID"}), 400
+
+    wav_path = EXPORTS_DIR / f"{song_id}.wav"
+    if wav_path.is_file():
+        return send_from_directory(EXPORTS_DIR, wav_path.name, as_attachment=True)
     return jsonify({"error": "File not found"}), 404
 
 
@@ -379,7 +396,8 @@ def analyze_track(song_id):
             prompt = song.prompt if song else "Música electrónica futurista."
             title = song.title if song else "Untitled"
             lyrics = getattr(song, "lyrics", "") if song else ""
-        except:
+        except Exception:
+            logger.exception("Track analysis failed")
             prompt = "Música electrónica futurista."
             title = "Untitled"
             lyrics = ""
@@ -423,4 +441,4 @@ def static_proxy(path):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5555)
+    app.run(debug=FLASK_DEBUG, host=FLASK_HOST, port=FLASK_PORT)

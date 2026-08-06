@@ -6,7 +6,7 @@ BlackMamba is a Suno-like audio generation interface with a minimal black theme.
 
 - **Display Page** (`/display`): Public Spanish interface with audio generation, progress tracking, playback, download, and share functionality
 - **Control Panel** (`/control`): Private English administrative interface protected by CONTROL_SECRET
-- **Mock API**: Simulated audio generation with random delays (1.5-3 seconds)
+- **Suno integration**: Real audio generation through the Flask backend
 - **Black Minimal Theme**: Built with TailwindCSS for a sleek, modern look
 
 ## Prerequisites
@@ -79,7 +79,7 @@ cp .env.example .env.local
 
 4. Update the `.env.local` file with your secret:
 ```env
-NEXT_PUBLIC_CONTROL_SECRET=your-secret-here
+CONTROL_SECRET=your-secret-here
 ```
 
 ### Development
@@ -119,14 +119,12 @@ Protected admin panel requiring a secret to access:
 - View recent activity
 
 **Language**: English
-**Default Secret**: `blackmamba2024` (change in `.env.local`)
-
-> **⚠️ Security Note**: The current implementation uses client-side authentication for simplicity. In a production environment, implement proper server-side authentication with secure session management.
+Authentication is validated server-side and stored in a signed, HttpOnly cookie.
 
 ## API Routes
 
 ### POST `/api/generate`
-Generates a mock audio file with random delay.
+Proxies audio generation to the Flask/Suno backend.
 
 **Response**:
 ```json
@@ -146,14 +144,12 @@ The app uses a black minimal theme. To customize:
 - Modify Tailwind classes in component files
 
 ### Audio Generation
-The `/api/generate` endpoint currently returns a sample file. To integrate real audio generation:
-1. Update `app/api/generate/route.ts`
-2. Add your audio generation logic
-3. Return the generated audio URL
+The `/api/generate` endpoint proxies requests to the Flask backend configured by
+`BACKEND_URL`.
 
 ### Secret Protection
 To change the control panel secret:
-1. Update `NEXT_PUBLIC_CONTROL_SECRET` in `.env.local`
+1. Update `CONTROL_SECRET` in `.env.local`
 2. Restart the development server
 
 ## Project Structure
@@ -182,7 +178,8 @@ Sunopo/
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `NEXT_PUBLIC_CONTROL_SECRET` | Secret to access control panel | `blackmamba2024` |
+| `CONTROL_SECRET` | Server-side secret to access control panel | Required |
+| `BACKEND_URL` | Flask backend used for generation | `http://localhost:5555` |
 | `NEXT_PUBLIC_APP_NAME` | Application name | `BlackMamba` |
 
 ## License

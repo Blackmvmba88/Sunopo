@@ -1,7 +1,3 @@
-import json
-import pytest
-from types import SimpleNamespace
-
 from app import app, session_store
 
 
@@ -51,3 +47,12 @@ def test_create_and_validate_session(monkeypatch):
         assert rv3.status_code == 200
         rv4 = c.get("/api/session/validate")
         assert rv4.get_json()["valid"] is False
+
+
+def test_malformed_bearer_header_does_not_crash(monkeypatch):
+    monkeypatch.setattr("app.read_session_id", lambda: None)
+
+    with app.test_client() as client:
+        response = client.get("/api/songs", headers={"Authorization": "Bearer"})
+
+    assert response.status_code == 400

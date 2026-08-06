@@ -1,5 +1,3 @@
-import json
-import pytest
 from types import SimpleNamespace
 
 from app import app
@@ -76,3 +74,10 @@ def test_api_songs_all(monkeypatch):
         assert "items" in data
         assert len(data["items"]) == 3
         assert data["has_more"] is False
+
+
+def test_download_rejects_invalid_song_id():
+    with app.test_client() as client:
+        response = client.get("/api/download/not%20safe")
+
+    assert response.status_code == 400
