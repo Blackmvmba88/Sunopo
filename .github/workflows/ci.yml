@@ -36,7 +36,7 @@ jobs:
       - name: Lint P0 session surface (ruff)
         run: ruff check app.py config.py sessions.py tests/test_session_startup.py
       - name: Format P0 session surface (black)
-        run: black --check app.py config.py sessions.py tests/test_session_startup.py
+        run: black --check --diff app.py config.py sessions.py tests/test_session_startup.py
       - name: Run tests
         env:
           PYTHONPATH: '.'
