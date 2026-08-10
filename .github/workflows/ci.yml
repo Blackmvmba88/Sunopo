@@ -31,7 +31,7 @@ jobs:
           pip install -r requirements.txt
       - name: Setup Redis env & Fernet key
         run: |
-          echo "REDIS_URL=redis://redis:6379/0" >> $GITHUB_ENV
+          echo "REDIS_URL=redis://localhost:6379/0" >> $GITHUB_ENV
           echo "SESSION_FERNET_KEY=$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" >> $GITHUB_ENV
       - name: Lint P0 session surface (ruff)
         run: ruff check app.py config.py sessions.py tests/test_session_startup.py
