@@ -1,5 +1,3 @@
-import json
-import pytest
 from types import SimpleNamespace
 
 from app import app
@@ -36,6 +34,7 @@ def test_api_songs_page(monkeypatch):
                 else make_fake_songs(0)
             )
 
+    monkeypatch.setattr("app.get_session_id", lambda: "test-session")
     monkeypatch.setattr("app.SunoClient", FakeClient)
 
     with app.test_client() as c:
@@ -67,6 +66,7 @@ def test_api_songs_all(monkeypatch):
                     lyrics="",
                 )
 
+    monkeypatch.setattr("app.get_session_id", lambda: "test-session")
     monkeypatch.setattr("app.SunoClient", FakeClient)
 
     with app.test_client() as c:
