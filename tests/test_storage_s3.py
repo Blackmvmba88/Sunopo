@@ -1,6 +1,8 @@
 import io
 from unittest.mock import Mock, patch
 
+from botocore.exceptions import ClientError
+
 from storage.s3 import S3Storage
 
 
@@ -22,6 +24,9 @@ def test_s3_save_and_exists(monkeypatch):
         mock_client.head_object.return_value = {}
         assert s3.exists("key.bin") is True
 
-        # test exists when head_object raises
-        mock_client.head_object.side_effect = Exception()
+        # test exists when S3 reports a client error
+        mock_client.head_object.side_effect = ClientError(
+            {"Error": {"Code": "404", "Message": "Not Found"}},
+            "HeadObject",
+        )
         assert s3.exists("nope") is False
