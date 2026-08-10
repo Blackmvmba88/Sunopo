@@ -1,7 +1,8 @@
 import logging
 
-import app as app_module
 from redis.exceptions import RedisError
+
+import app as app_module
 from sessions import SessionStore
 
 
