@@ -85,7 +85,9 @@ def get_session_id():
         auth = request.headers.get("Authorization")
         if auth:
             scheme, separator, credentials = auth.partition(" ")
-            token = credentials.strip() if separator and scheme.lower() == "bearer" else ""
+            token = (
+                credentials.strip() if separator and scheme.lower() == "bearer" else ""
+            )
             if token and session_store:
                 cookie = session_store.get_session(token)
                 if cookie:
