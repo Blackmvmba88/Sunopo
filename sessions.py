@@ -1,15 +1,17 @@
 import uuid
-from typing import Optional
-from cryptography.fernet import Fernet, InvalidToken
+
 import redis
-from config import REDIS_URL, SESSION_TTL_SECONDS, SESSION_FERNET_KEY
+from cryptography.fernet import Fernet, InvalidToken
 
 
 class SessionStore:
     def __init__(
-        self, redis_url: str = None, ttl: int = 86400, fernet_key: Optional[str] = None
+        self,
+        redis_url: str | None = None,
+        ttl: int = 86400,
+        fernet_key: str | None = None,
     ):
-        self.ttl = ttl
+        self.ttl_seconds = ttl
         if redis_url:
             self.client = redis.from_url(redis_url)
         else:
@@ -21,7 +23,6 @@ class SessionStore:
             )
         else:
             self.fernet = None
-            # Warn at runtime if encryption is not configured
             print(
                 "Warning: SESSION_FERNET_KEY not set. Session values will be stored in Redis unencrypted."
             )
@@ -31,7 +32,7 @@ class SessionStore:
             return data
         return self.fernet.encrypt(data.encode()).decode()
 
-    def _decrypt(self, token: str) -> str:
+    def _decrypt(self, token: str) -> str | None:
         if not self.fernet:
             return token
         try:
@@ -44,10 +45,10 @@ class SessionStore:
             raise RuntimeError("Redis client not configured")
         token = uuid.uuid4().hex
         value = self._encrypt(cookie_str)
-        self.client.setex(token, self.ttl, value)
+        self.client.setex(token, self.ttl_seconds, value)
         return token
 
-    def get_session(self, token: str) -> Optional[str]:
+    def get_session(self, token: str) -> str | None:
         if not self.client:
             return None
         val = self.client.get(token)
@@ -66,5 +67,5 @@ class SessionStore:
             return -2
         try:
             return self.client.ttl(token)
-        except Exception:
+        except redis.RedisError:
             return -2
