@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   smoke:
     runs-on: ubuntu-latest
@@ -48,20 +52,12 @@ jobs:
     needs: smoke
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v2
-      - name: Bring up docker-compose services
-        run: |
-          docker-compose up -d
-      - name: Wait for Redis to be ready
-        run: |
-          for i in {1..30}; do
-            if docker-compose exec -T redis redis-cli ping >/dev/null 2>&1; then
-              echo "redis ready";
-              break;
-            fi;
-            sleep 1;
-          done
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Bring up Compose services
+        run: docker compose up -d --wait --wait-timeout 60
       - name: Set env for tests
         run: |
           echo "REDIS_URL=redis://localhost:6379/0" >> $GITHUB_ENV
@@ -75,6 +71,6 @@ jobs:
           PYTHONPATH: '.'
         run: |
           pytest -q tests/test_session_integration.py
-      - name: Tear down docker-compose
+      - name: Tear down Compose services
         if: always()
-        run: docker-compose down
+        run: docker compose down
