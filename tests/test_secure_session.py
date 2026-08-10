@@ -1,8 +1,4 @@
-import json
-import pytest
-from types import SimpleNamespace
-
-from app import app, session_store
+from app import app
 
 
 class FakeStore:
@@ -41,7 +37,7 @@ def test_create_and_validate_session(monkeypatch):
         assert "SUNOPO_SESSION_TOKEN" in rv.headers.get("Set-Cookie")
 
         # validate via cookie
-        c.set_cookie("localhost", "SUNOPO_SESSION_TOKEN", token)
+        c.set_cookie("SUNOPO_SESSION_TOKEN", token, domain="localhost")
         rv2 = c.get("/api/session/validate")
         d2 = rv2.get_json()
         assert d2["valid"] is True
