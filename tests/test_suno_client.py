@@ -1,4 +1,3 @@
-import pytest
 from suno_client import SunoClient
 
 
@@ -23,14 +22,9 @@ class DummyClient:
 
 
 def test_get_song_monkeypatch(monkeypatch):
-    # Patch Suno constructor used inside SunoClient
-    from suno_client import SunoClient
-
+    # Patch the constructor bound inside suno_client.py.
     def fake_suno(cookie=None):
         class C:
-            def __init__(self):
-                pass
-
             class songs:
                 @staticmethod
                 def list(page=1, limit=100):
@@ -38,7 +32,7 @@ def test_get_song_monkeypatch(monkeypatch):
 
         return C()
 
-    monkeypatch.setattr("suno.Suno", fake_suno)
+    monkeypatch.setattr("suno_client.Suno", fake_suno)
     client = SunoClient(cookie="abc")
     song = client.get_song("def")
     assert song is not None
