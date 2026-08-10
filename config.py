@@ -14,9 +14,7 @@ REPORTS_DIR = Path(os.environ.get("SUNOPO_REPORTS_DIR", BASE_DIR / "reports"))
 
 # Session file path (sensitive)
 SESSION_ID_PATH = Path(
-    os.environ.get(
-        "SUNO_SESSION_ID_PATH", BASE_DIR / ".data" / "suno_session.txt"
-    )
+    os.environ.get("SUNO_SESSION_ID_PATH", BASE_DIR / ".data" / "suno_session.txt")
 )
 
 # Flask settings
