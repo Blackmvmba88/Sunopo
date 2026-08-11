@@ -68,7 +68,8 @@ The repository contains infrastructure for:
 - `/control` provides an early administrative surface
 - system status and product configuration concepts are already represented
 
-**Important:** the current `/control` authentication is client-side and must not be treated as production security. Server-side authentication is a launch blocker.
+`/control` is protected by a signed, HttpOnly application session. Login and
+logout execute on the server; logout requires a same-origin CSRF token.
 
 ## Architecture
 
@@ -174,7 +175,8 @@ Core variables include:
 | `SUNOPO_USE_S3` | Enable S3-backed storage where supported |
 | `SUNOPO_S3_BUCKET` | S3 bucket name |
 | `AWS_REGION` | AWS region |
-| `NEXT_PUBLIC_CONTROL_SECRET` | Legacy client-side control secret; development only |
+| `CONTROL_SECRET` | Server-only credential used to enter `/control` |
+| `CONTROL_SESSION_SECRET` | Server-only HMAC key used to sign control sessions |
 
 Do not commit real session cookies, secrets, tokens, or encryption keys.
 
@@ -199,7 +201,7 @@ This surface will be normalized and versioned before a public release.
 
 Sunopo should not be considered production-ready until the following gates are complete:
 
-1. server-side control authentication
+1. deploy server-side control authentication with rotated production secrets
 2. session/security hardening
 3. deterministic error contracts across Next.js and Flask
 4. removal of demo/mock fallbacks from production paths
