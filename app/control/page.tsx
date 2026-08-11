@@ -1,85 +1,18 @@
-'use client';
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
-import { useState } from 'react';
+import { LogoutButton } from "./logout-button";
+import {
+  CONTROL_SESSION_COOKIE,
+  configuredSessionSecret,
+  verifyControlSession,
+} from "@/lib/control-auth";
 
-// Helper function to check initial auth state
-const getInitialAuthState = () => {
-  if (typeof window !== 'undefined') {
-    return sessionStorage.getItem('control_auth') === 'true';
-  }
-  return false;
-};
-
-export default function ControlPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(getInitialAuthState);
-  const [secretInput, setSecretInput] = useState('');
-  const [error, setError] = useState('');
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // NOTE: In production, use server-side authentication
-    // This is a simple client-side demo for illustration purposes only
-    const secret = process.env.NEXT_PUBLIC_CONTROL_SECRET || 'blackmamba2024';
-    
-    if (secretInput === secret) {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('control_auth', 'true');
-      setError('');
-    } else {
-      setError('Invalid secret. Please try again.');
-      setSecretInput('');
-    }
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    sessionStorage.removeItem('control_auth');
-    setSecretInput('');
-  };
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-8 space-y-6">
-            <div className="text-center space-y-2">
-              <h1 className="text-3xl font-bold">Control Panel</h1>
-              <p className="text-gray-400">Enter secret to access</p>
-            </div>
-
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <input
-                  type="password"
-                  value={secretInput}
-                  onChange={(e) => setSecretInput(e.target.value)}
-                  placeholder="Enter secret..."
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white"
-                  autoFocus
-                />
-              </div>
-
-              {error && (
-                <div className="bg-red-900/20 border border-red-800 rounded-lg p-3 text-red-400 text-sm">
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                className="w-full bg-white text-black font-semibold py-3 px-6 rounded-full hover:bg-gray-200 transition-all duration-200"
-              >
-                Access Control Panel
-              </button>
-            </form>
-
-            <div className="text-center text-sm text-gray-500">
-              <p>Hint: Check .env file for the secret</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+export default async function ControlPage() {
+  const cookieStore = await cookies();
+  const session = cookieStore.get(CONTROL_SESSION_COOKIE)?.value;
+  if (!verifyControlSession(session, configuredSessionSecret())) {
+    redirect("/control/login");
   }
 
   return (
@@ -91,12 +24,7 @@ export default function ControlPage() {
             <h1 className="text-3xl font-bold">Control Panel</h1>
             <p className="text-gray-400">BlackMamba Administration</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="bg-zinc-800 hover:bg-zinc-700 text-white font-medium py-2 px-6 rounded-full transition-all duration-200 border border-zinc-700"
-          >
-            Logout
-          </button>
+          <LogoutButton />
         </div>
 
         {/* Stats Grid */}
