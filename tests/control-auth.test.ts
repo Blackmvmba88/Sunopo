@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
 
@@ -33,6 +34,19 @@ describe("control authentication", () => {
         now + CONTROL_SESSION_MAX_AGE_SECONDS * 1_000 + 1,
       ),
     ).toBe(false);
+  });
+
+  it("rejects signed sessions with invalid time bounds or nonce", () => {
+    const sign = (payload: object) => {
+      const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
+      const signature = createHmac("sha256", signingSecret).update(encoded).digest("base64url");
+      return `${encoded}.${signature}`;
+    };
+    const base = { version: 1, issuedAt: now, expiresAt: now + 1000, nonce: "long-enough-test-nonce" };
+    expect(verifyControlSession(sign({ ...base, expiresAt: now + (CONTROL_SESSION_MAX_AGE_SECONDS + 1) * 1000 }), signingSecret, now)).toBe(false);
+    expect(verifyControlSession(sign({ ...base, issuedAt: null }), signingSecret, now)).toBe(false);
+    expect(verifyControlSession(sign({ ...base, nonce: "" }), signingSecret, now)).toBe(false);
+    expect(verifyControlSession(sign({ ...base, expiresAt: now - 1 }), signingSecret, now)).toBe(false);
   });
 
   it("compares credentials and CSRF values without plain equality", () => {
