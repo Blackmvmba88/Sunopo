@@ -83,8 +83,13 @@ export function verifyControlSession(
       typeof session.issuedAt === "number" &&
       typeof session.expiresAt === "number" &&
       typeof session.nonce === "string" &&
+      Number.isFinite(session.issuedAt) &&
+      Number.isFinite(session.expiresAt) &&
+      session.nonce.length >= 16 &&
       session.issuedAt <= now &&
-      session.expiresAt > now
+      session.expiresAt > now &&
+      session.expiresAt > session.issuedAt &&
+      session.expiresAt - session.issuedAt <= CONTROL_SESSION_MAX_AGE_SECONDS * 1000
     );
   } catch {
     return false;
